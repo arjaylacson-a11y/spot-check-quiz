@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spot Check Quiz</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f5f4f0;
+      --surface: #ffffff;
+      --border: #e2e0d8;
+      --text: #1a1916;
+      --text-muted: #7a7870;
+      --accent: #4a3fcc;
+      --accent-light: #edeafc;
+      --correct-bg: #eaf4e8;
+      --correct-border: #4caf50;
+      --correct-text: #1b5e20;
+      --wrong-bg: #fdecea;
+      --wrong-border: #e53935;
+      --wrong-text: #7f1d1d;
+      --radius: 12px;
+      --radius-sm: 8px;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+      color: var(--text);
+    }
+
+    .container {
+      width: 100%;
+      max-width: 640px;
+    }
+
+    /* Header */
+    .header {
+      margin-bottom: 2rem;
+    }
+    .header-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .header-title {
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    /* Progress */
+    .progress-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .progress-label {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-family: 'DM Mono', monospace;
+    }
+    .progress-bar-bg {
+      height: 4px;
+      background: var(--border);
+      border-radius: 99px;
+      margin-bottom: 1.5rem;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 4px;
+      background: var(--accent);
+      border-radius: 99px;
+      transition: width 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Card */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.75rem;
+      margin-bottom: 1rem;
+    }
+    .question-num {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 10px;
+    }
+    .question-text {
+      font-size: 16px;
+      font-weight: 500;
+      line-height: 1.55;
+      color: var(--text);
+      margin-bottom: 1.25rem;
+    }
+
+    /* Options */
+    .option-btn {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      width: 100%;
+      text-align: left;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 11px 14px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      color: var(--text);
+      transition: background 0.15s, border-color 0.15s, transform 0.1s;
+      line-height: 1.5;
+    }
+    .option-btn:hover:not(:disabled) {
+      background: var(--accent-light);
+      border-color: var(--accent);
+      transform: translateX(2px);
+    }
+    .option-btn:disabled { cursor: default; }
+    .option-btn.correct {
+      background: var(--correct-bg);
+      border-color: var(--correct-border);
+      color: var(--correct-text);
+    }
+    .option-btn.wrong {
+      background: var(--wrong-bg);
+      border-color: var(--wrong-border);
+      color: var(--wrong-text);
+    }
+    .option-letter {
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      font-weight: 500;
+      min-width: 20px;
+      padding-top: 1px;
+      opacity: 0.6;
+    }
+    .option-btn.correct .option-letter,
+    .option-btn.wrong .option-letter { opacity: 1; }
+
+    /* Feedback */
+    .feedback {
+      font-size: 13px;
+      margin-top: 10px;
+      min-height: 20px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .feedback.correct { color: var(--correct-text); }
+    .feedback.wrong { color: var(--wrong-text); }
+    .feedback-icon { font-size: 15px; }
+
+    /* Nav */
+    .nav-row {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      margin-top: 0.5rem;
+    }
+    .next-btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 10px 22px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+      display: none;
+    }
+    .next-btn:hover { background: #3730a3; transform: translateY(-1px); }
+    .next-btn:active { transform: translateY(0); }
+
+    /* Score */
+    .score-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2.5rem 2rem;
+      text-align: center;
+    }
+    .score-big {
+      font-size: 56px;
+      font-weight: 600;
+      color: var(--accent);
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .score-sub {
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+    }
+    .badge {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 500;
+      padding: 4px 14px;
+      border-radius: 99px;
+      margin-bottom: 1.25rem;
+    }
+    .badge-pass { background: var(--correct-bg); color: var(--correct-text); border: 1px solid var(--correct-border); }
+    .badge-fail { background: var(--wrong-bg); color: var(--wrong-text); border: 1px solid var(--wrong-border); }
+    .score-msg {
+      font-size: 15px;
+      color: var(--text-muted);
+      margin-bottom: 2rem;
+      line-height: 1.6;
+    }
+
+    /* Review */
+    .review-title {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      text-align: left;
+      margin-bottom: 10px;
+    }
+    .review-item {
+      text-align: left;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      margin-bottom: 8px;
+    }
+    .review-q { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 6px; }
+    .review-ans { font-size: 12px; margin-bottom: 2px; }
+    .review-wrong { color: var(--wrong-text); }
+    .review-correct-ans { color: var(--correct-text); }
+
+    .restart-btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 11px 28px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+      margin-top: 1.5rem;
+    }
+    .restart-btn:hover { background: #3730a3; transform: translateY(-1px); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="header-label">Knowledge check</div>
+      <div class="header-title">Spot Check Quiz</div>
+    </div>
+    <div id="quiz-area"></div>
+  </div>
+
+  <script>
+    const questions = [
+      {
+        q: "Where should agents now submit meal and break adjustment requests instead of Slack?",
+        options: ["Zendesk ticket", "Assembled app", "Direct message to a lead", "Google Form"],
+        correct: 1
+      },
+      {
+        q: "What is a warm transfer?",
+        options: [
+          "Transferring a call immediately without speaking to anyone",
+          "Sending the client an email before the transfer",
+          "Connecting with the receiving rep before taking the client off hold",
+          "Placing the client on hold while looking up their account"
+        ],
+        correct: 2
+      },
+      {
+        q: "What platform is replacing Zendesk effective May 31st?",
+        options: [
+          "Salesforce with AI integration",
+          "Freshdesk with CRM sync",
+          "Twilio Flex with Client HUD integration",
+          "Intercom with live chat"
+        ],
+        correct: 2
+      },
+      {
+        q: "Under the 24-hour cancellation courtesy credit policy, how many times can a client receive the session credit?",
+        options: [
+          "Once per year",
+          "Once per billing cycle",
+          "Twice per membership",
+          "Once per membership"
+        ],
+        correct: 3
+      },
+      {
+        q: "Which of the following makes a client eligible for the first missed session courtesy credit?",
+        options: [
+          "The student missed a group class session",
+          "It is the student's first missed 1:1 session and the session was charged",
+          "The client requested a refund within 48 hours",
+          "The tutor cancelled the session on the client's behalf"
+        ],
+        correct: 1
+      },
+      {
+        q: "What is replacing Nerdy AI?",
+        options: ["Nerdy Bot", "Nerdy Connect", "Nerdy Assistant", "Nerdy HUD"],
+        correct: 2
+      }
+    ];
+
+    const letters = ["A", "B", "C", "D"];
+    let current = 0, score = 0, answered = false, results = [];
+
+    function render() {
+      const area = document.getElementById("quiz-area");
+      if (current >= questions.length) { renderScore(area); return; }
+
+      const q = questions[current];
+      const pct = Math.round((current / questions.length) * 100);
+
+      area.innerHTML = `
+        <div class="progress-row">
+          <span class="progress-label">Question ${current + 1} / ${questions.length}</span>
+          <span class="progress-label">Score: ${score}</span>
+        </div>
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill" style="width:${pct}%"></div>
+        </div>
+        <div class="card">
+          <div class="question-num">Q${current + 1}</div>
+          <div class="question-text">${q.q}</div>
+          ${q.options.map((opt, i) => `
+            <button class="option-btn" id="opt-${i}" onclick="selectOption(${i})">
+              <span class="option-letter">${letters[i]}</span>
+              <span>${opt}</span>
+            </button>
+          `).join("")}
+          <div class="feedback" id="feedback"></div>
+        </div>
+        <div class="nav-row">
+          <button class="next-btn" id="next-btn" onclick="nextQuestion()">
+            ${current + 1 < questions.length ? "Next question →" : "See results →"}
+          </button>
+        </div>
+      `;
+    }
+
+    function selectOption(i) {
+      if (answered) return;
+      answered = true;
+      const q = questions[current];
+      const isCorrect = i === q.correct;
+      if (isCorrect) score++;
+      results.push({ q: q.q, options: q.options, selected: i, correct: q.correct, isCorrect });
+
+      for (let j = 0; j < q.options.length; j++) {
+        const btn = document.getElementById("opt-" + j);
+        btn.disabled = true;
+        if (j === q.correct) btn.className = "option-btn correct";
+        else if (j === i && !isCorrect) btn.className = "option-btn wrong";
+      }
+
+      const fb = document.getElementById("feedback");
+      fb.className = isCorrect ? "feedback correct" : "feedback wrong";
+      fb.innerHTML = isCorrect
+        ? `<span class="feedback-icon">✓</span> Correct!`
+        : `<span class="feedback-icon">✗</span> Incorrect — the correct answer is <strong>${letters[q.correct]}. ${q.options[q.correct]}</strong>`;
+
+      document.getElementById("next-btn").style.display = "inline-block";
+    }
+
+    function nextQuestion() {
+      current++;
+      answered = false;
+      render();
+    }
+
+    function renderScore(area) {
+      const pct = Math.round((score / questions.length) * 100);
+      const pass = pct >= 70;
+      const msg = pct === 100
+        ? "Perfect score! You've got this completely down."
+        : pct >= 80 ? "Great job! You have a strong grasp of the material."
+        : pct >= 70 ? "Good work! A quick review of missed items will help."
+        : "Keep reviewing — you'll get there with a bit more practice.";
+
+      const missed = results.filter(r => !r.isCorrect);
+
+      area.innerHTML = `
+        <div class="score-card">
+          <div class="score-big">${score}/${questions.length}</div>
+          <div class="score-sub">${pct}% correct</div>
+          <span class="badge ${pass ? "badge-pass" : "badge-fail"}">${pass ? "Passed ✓" : "Needs review"}</span>
+          <div class="score-msg">${msg}</div>
+          ${missed.length > 0 ? `
+            <div class="review-title">Missed questions</div>
+            ${missed.map(r => `
+              <div class="review-item">
+                <div class="review-q">${r.q}</div>
+                <div class="review-ans review-wrong">✗ Your answer: ${letters[r.selected]}. ${r.options[r.selected]}</div>
+                <div class="review-ans review-correct-ans">✓ Correct: ${letters[r.correct]}. ${r.options[r.correct]}</div>
+              </div>
+            `).join("")}
+          ` : `<div style="font-size:14px; color:#4caf50; margin-bottom:1rem;">All questions answered correctly!</div>`}
+          <button class="restart-btn" onclick="restartQuiz()">Retake quiz</button>
+        </div>
+      `;
+    }
+
+    function restartQuiz() {
+      current = 0; score = 0; answered = false; results = [];
+      render();
+    }
+
+    render();
+  </script>
+</body>
+</html>
