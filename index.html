@@ -269,9 +269,115 @@
       margin-top: 1.5rem;
     }
     .restart-btn:hover { background: #3730a3; transform: translateY(-1px); }
+
+    /* Email gate modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(26, 25, 22, 0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      z-index: 100;
+    }
+    .modal-overlay.hidden { display: none; }
+    .modal-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2rem 1.75rem;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 12px 40px rgba(26, 25, 22, 0.12);
+    }
+    .modal-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .modal-desc {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.55;
+      margin-bottom: 1.25rem;
+    }
+    .modal-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 6px;
+    }
+    .modal-input {
+      width: 100%;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      margin-bottom: 8px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .modal-input:focus { border-color: var(--accent); }
+    .modal-input.invalid { border-color: var(--wrong-border); }
+    .modal-error {
+      font-size: 12px;
+      color: var(--wrong-text);
+      min-height: 18px;
+      margin-bottom: 4px;
+    }
+    .modal-submit {
+      width: 100%;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 11px 22px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: background 0.15s;
+    }
+    .modal-submit:hover { background: #3730a3; }
+    .modal-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .save-status {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 0.75rem;
+      min-height: 18px;
+    }
+    .save-status.ok { color: var(--correct-text); }
+    .save-status.err { color: var(--wrong-text); }
+
+    body.quiz-locked .container { filter: blur(2px); pointer-events: none; user-select: none; }
   </style>
 </head>
-<body>
+<body class="quiz-locked">
+  <div id="email-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-card">
+      <div class="modal-title" id="modal-title">Before you begin</div>
+      <p class="modal-desc">Enter your work email to start the spot check. Your score will be saved when you finish.</p>
+      <form id="email-form" novalidate>
+        <label class="modal-label" for="rep-email">Email address</label>
+        <input
+          class="modal-input"
+          type="email"
+          id="rep-email"
+          name="email"
+          placeholder="you@company.com"
+          autocomplete="email"
+          required
+        />
+        <div class="modal-error" id="email-error" aria-live="polite"></div>
+        <button type="submit" class="modal-submit" id="start-btn">Start quiz</button>
+      </form>
+    </div>
+  </div>
+
   <div class="container">
     <div class="header">
       <div class="header-label">Knowledge check</div>
@@ -280,6 +386,12 @@
     <div id="quiz-area"></div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    window.SUPABASE_URL = window.SUPABASE_URL || "";
+    window.SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || "";
+  </script>
+  <script src="config.js"></script>
   <script>
     const questions = [
       {
@@ -334,10 +446,188 @@
       }
     ];
 
+    const QUIZ_NAME = "Spot Check Quiz";
+    const UNAUTHORIZED_MSG = "You are not Authorize to participate on this Activity";
+    const ALREADY_COMPLETED_MSG = "You have already completed this quiz.";
+
+    const ALLOWED_EMAILS = new Set([
+      "chrislene.pacure@varsitytutors.com",
+      "james.ceniza@varsitytutors.com",
+      "jerine.palmer@varsitytutors.com",
+      "krizel.noble@varsitytutors.com",
+      "leah.torres@varsitytutors.com",
+      "margaux.adduru@varsitytutors.com",
+      "maria.cantular@varsitytutors.com",
+      "swiss.yurag@varsitytutors.com",
+      "gladys.narvaez@varsitytutors.com",
+      "marcelle.antunes@varsitytutors.com",
+      "thaina.lettiere@varsitytutors.com",
+      "aimee.benitez@varsitytutors.com",
+      "anna.rillera@varsitytutors.com",
+      "arvie.lagazon@varsitytutors.com",
+      "benny.arellano@varsitytutors.com",
+      "cheyenne.ban@varsitytutors.com",
+      "donna.saligumba@varsitytutors.com",
+      "doriela.kindica@varsitytutors.com",
+      "eljhon.vergara@varsitytutors.com",
+      "frances.cajegas@varsitytutors.com",
+      "myka.emperado@varsitytutors.com",
+      "yhel.yee@varsitytutors.com",
+      "jack.sinclair@varsitytutors.com",
+      "jennifer.hill@varsitytutors.com",
+      "lahissa.pereira@varsitytutors.com",
+      "roberta.oliveira@varsitytutors.com",
+      "adyeri.salazar@varsitytutors.com",
+      "jenifer.souza@varsitytutors.com"
+    ]);
+
     const letters = ["A", "B", "C", "D"];
+    let repEmail = null;
     let current = 0, score = 0, answered = false, results = [];
+    let quizStarted = false;
+    let lastSaveStatus = "";
+
+    function normalizeEmail(value) {
+      return value.trim().toLowerCase();
+    }
+
+    function isValidEmail(value) {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+    }
+
+    function isAllowedEmail(value) {
+      return ALLOWED_EMAILS.has(normalizeEmail(value));
+    }
+
+    async function hasAlreadyCompleted(email) {
+      const client = getSupabaseClient();
+      if (!client) return false;
+
+      const { data, error } = await client.rpc("quiz_already_taken", {
+        check_email: email
+      });
+      if (error) {
+        console.error("Completion check failed:", error);
+        return false;
+      }
+      return data === true;
+    }
+
+    function getSupabaseClient() {
+      const url = window.SUPABASE_URL;
+      const key = window.SUPABASE_ANON_KEY;
+      if (!url || !key || url.includes("YOUR_PROJECT")) return null;
+      return window.supabase.createClient(url, key);
+    }
+
+    function initEmailGate() {
+      const modal = document.getElementById("email-modal");
+      const form = document.getElementById("email-form");
+      const input = document.getElementById("rep-email");
+      const errorEl = document.getElementById("email-error");
+      const startBtn = document.getElementById("start-btn");
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const raw = input.value.trim();
+        errorEl.textContent = "";
+        input.classList.remove("invalid");
+
+        if (!isValidEmail(raw)) {
+          input.classList.add("invalid");
+          errorEl.textContent = "Please enter a valid email address.";
+          input.focus();
+          return;
+        }
+
+        const email = normalizeEmail(raw);
+
+        if (!isAllowedEmail(email)) {
+          input.classList.add("invalid");
+          errorEl.textContent = UNAUTHORIZED_MSG;
+          input.focus();
+          return;
+        }
+
+        startBtn.disabled = true;
+        startBtn.textContent = "Checking…";
+
+        if (await hasAlreadyCompleted(email)) {
+          input.classList.add("invalid");
+          errorEl.textContent = ALREADY_COMPLETED_MSG;
+          startBtn.disabled = false;
+          startBtn.textContent = "Start quiz";
+          input.focus();
+          return;
+        }
+
+        repEmail = email;
+        modal.classList.add("hidden");
+        document.body.classList.remove("quiz-locked");
+        if (!quizStarted) {
+          quizStarted = true;
+          render();
+        }
+      });
+
+      input.focus();
+    }
+
+    async function saveResultsToSupabase(pct, pass) {
+      const client = getSupabaseClient();
+      if (!client || !repEmail) {
+        lastSaveStatus = client ? "" : "not_configured";
+        return { ok: false, reason: lastSaveStatus };
+      }
+
+      const payload = {
+        email: repEmail,
+        quiz_name: QUIZ_NAME,
+        score,
+        total_questions: questions.length,
+        percent_correct: pct,
+        passed: pass,
+        missed_count: results.filter((r) => !r.isCorrect).length,
+        results_json: results.map((r) => ({
+          question: r.q,
+          selected_index: r.selected,
+          correct_index: r.correct,
+          is_correct: r.isCorrect
+        }))
+      };
+
+      const { error } = await client.from("quiz_results").insert(payload);
+      if (error) {
+        console.error("Supabase save failed:", error);
+        if (error.code === "23505") {
+          lastSaveStatus = "duplicate";
+          return { ok: false, reason: "duplicate" };
+        }
+        lastSaveStatus = "error";
+        return { ok: false, reason: error.message };
+      }
+      lastSaveStatus = "saved";
+      return { ok: true };
+    }
+
+    function saveStatusHtml(saveResult) {
+      if (!getSupabaseClient()) {
+        return `<div class="save-status">Score not saved — add <code>config.js</code> with your Supabase keys.</div>`;
+      }
+      if (saveResult?.ok) {
+        return `<div class="save-status ok">Score saved for ${repEmail}</div>`;
+      }
+      if (saveResult?.reason === "duplicate") {
+        return `<div class="save-status err">${ALREADY_COMPLETED_MSG}</div>`;
+      }
+      if (saveResult?.reason && saveResult.reason !== "not_configured") {
+        return `<div class="save-status err">Could not save score. Please contact your lead.</div>`;
+      }
+      return `<div class="save-status">Saving score…</div>`;
+    }
 
     function render() {
+      if (!quizStarted) return;
       const area = document.getElementById("quiz-area");
       if (current >= questions.length) { renderScore(area); return; }
 
@@ -401,7 +691,7 @@
       render();
     }
 
-    function renderScore(area) {
+    async function renderScore(area) {
       const pct = Math.round((score / questions.length) * 100);
       const pass = pct >= 70;
       const msg = pct === 100
@@ -418,6 +708,7 @@
           <div class="score-sub">${pct}% correct</div>
           <span class="badge ${pass ? "badge-pass" : "badge-fail"}">${pass ? "Passed ✓" : "Needs review"}</span>
           <div class="score-msg">${msg}</div>
+          <div id="save-status">${saveStatusHtml()}</div>
           ${missed.length > 0 ? `
             <div class="review-title">Missed questions</div>
             ${missed.map(r => `
@@ -428,17 +719,16 @@
               </div>
             `).join("")}
           ` : `<div style="font-size:14px; color:#4caf50; margin-bottom:1rem;">All questions answered correctly!</div>`}
-          <button class="restart-btn" onclick="restartQuiz()">Retake quiz</button>
+          <p class="score-msg" style="margin-bottom:0; margin-top:1rem;">Thank you. Your responses have been recorded.</p>
         </div>
       `;
+
+      const saveResult = await saveResultsToSupabase(pct, pass);
+      const statusEl = document.getElementById("save-status");
+      if (statusEl) statusEl.outerHTML = saveStatusHtml(saveResult);
     }
 
-    function restartQuiz() {
-      current = 0; score = 0; answered = false; results = [];
-      render();
-    }
-
-    render();
+    initEmailGate();
   </script>
 </body>
 </html>
