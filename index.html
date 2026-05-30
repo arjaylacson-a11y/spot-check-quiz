@@ -391,7 +391,6 @@
     window.SUPABASE_URL = window.SUPABASE_URL || "";
     window.SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || "";
   </script>
-  <script src="config.js"></script>
   <script>
     const questions = [
       {
@@ -612,7 +611,6 @@
 
     function saveStatusHtml(saveResult) {
       if (!getSupabaseClient()) {
-        return `<div class="save-status">Score not saved — add <code>config.js</code> with your Supabase keys.</div>`;
       }
       if (saveResult?.ok) {
         return `<div class="save-status ok">Score saved for ${repEmail}</div>`;
